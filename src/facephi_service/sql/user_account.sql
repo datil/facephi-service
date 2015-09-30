@@ -17,3 +17,8 @@ UPDATE "USER_ACCOUNT" SET is_active = 0 WHERE username = :username
 -- Sets account is_active status to 1
 
 UPDATE "USER_ACCOUNT" SET is_active = 1 WHERE username = :username
+
+-- name: get-user
+-- Finds an existing user
+
+SELECT * FROM "USER_ACCOUNT" WHERE username = :username

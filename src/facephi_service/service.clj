@@ -2,6 +2,7 @@
   (:require [facephi-service.api-key :as ak]
             [facephi-service.conf :as conf]
             [facephi-service.database :as db]
+            [facephi-service.facephi :as fp]
             [facephi-service.messages :as msg]
             [io.pedestal.http :as bootstrap]
             [io.pedestal.http.route :as route]
@@ -16,12 +17,32 @@
 (def opt s/optional-key)
 (def req s/required-key)
 
+;;;; Schemas
+
+(s/defschema NewUserRequest
+  {(req :username) s/Str
+   (req :template-1) s/Str
+   (opt :template-2) s/Str})
+
+(s/defschema NewUserResponse
+  {(req :username) s/Str})
+
 ;;;; Responses
 
 (defn not-authorized
   [message]
   (-> (ring-resp/response {:message message})
       (ring-resp/status 401)))
+
+(defn bad-request
+  [message]
+  (-> (ring-resp/response {:message message})
+      (ring-resp/status 400)))
+
+(defn created
+  [message]
+  (-> (ring-resp/response message)
+      (ring-resp/status 201)))
 
 
 ;;;; Handlers
@@ -36,11 +57,25 @@
                        :facephi_sdk_status "Ok"
                        :clojure_version (clojure-version)}))
 
-(swagger/defhandler new-user
-  {:summary "Creates new user account"
-   :responses {201 {:description "User created successfuly."}}}
+(swagger/defhandler user-registration
+  {:summary "Creates a new user"
+   :parameters {:body NewUserRequest}
+   :responses {201 {:description "User created successfuly."
+                    :schema NewUserResponse}
+               400 {:description "User already exists."}}}
   [request]
-  {:username "test-user"})
+  (let [db-spec (:db-spec request)
+        params (:body-params request)
+        username (:username params)
+        template-1 (:template-1 params)
+        template-2 (:template-2 params)
+        face (fp/new-user template-1 template-2)
+        existing-user (first (db/get-user db-spec username))]
+    (if existing-user
+      (bad-request (:duplicated-user msg/errors))
+      (do
+        (db/save-user! db-spec username 1 face)
+        (created {:username username})))))
 
 ;;;; Interceptors
 
@@ -91,7 +126,7 @@
                       :about home-page]}]
      ["/users" ^:interceptors [(annotate {:tags ["users"]})
                                authenticate-api-key]
-      ["/registration" {:post [:user-registration home-page]}]
+      ["/registration" {:post [:user-registration user-registration]}]
       ["/:username" {:get [:user-detail home-page]}
        ["/authentication" {:post [:user-authentication home-page]}]
        ["/retraining" {:post [:user-retrain home-page]}]

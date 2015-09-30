@@ -20,3 +20,7 @@
   (assoc config :datasource (lookup-datasource (:datasource config))))
 
 (defqueries "facephi_service/sql/api_key.sql")
+
+(defqueries "facephi_service/sql/user_account.sql")
+
+(defqueries "facephi_service/sql/user_log.sql")

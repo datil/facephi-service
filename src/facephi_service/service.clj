@@ -25,19 +25,21 @@
 
 ;;;; Handlers
 
-(defn about-page
-  [request]
-  (ring-resp/response (format "Clojure %s - served from %s"
-                              (clojure-version)
-                              (route/url-for ::about-page))))
-
-(defn home-page
+(swagger/defhandler home-page
+  {:summary "Returns key service metrics."
+   :responses {200 {:description "System is running."}}}
   [request]
   (ring-resp/response {:name "FacePhi Service"
                        :version "0.1.0"
                        :database_status "Ok"
                        :facephi_sdk_status "Ok"
                        :clojure_version (clojure-version)}))
+
+(swagger/defhandler new-user
+  {:summary "Creates new user account"
+   :responses {201 {:description "User created successfuly."}}}
+  [request]
+  {:username "test-user"})
 
 ;;;; Interceptors
 
@@ -71,17 +73,24 @@
 (swagger/defroutes routes
   {:info {:title "FacePhi Service"
           :description "Provides biometric authentication as a service using FacePhi SDK."
-          :version "0.1.0"}}
-  [[["/" {:get home-page}
+          :version "0.1.0"
+          :tags [{:name "monitoring"
+                  :description "Key service monitoring metrics."}
+                 {:name "users"
+                  :description "User account management."}]}}
+  [[["/"
      ^:interceptors [bootstrap/json-body
                      sw.error/handler
                      (swagger/body-params)
                      (swagger/coerce-request)
                      (swagger/validate-response)
-                     assoc-db-spec
-                     authenticate-api-key]
-     ["/about" {:get [^:interceptors []
-                      :about about-page]}]
+                     assoc-db-spec]
+     ["/about" {:get [^:interceptors [(annotate {:tags ["monitoring"]})
+                                      authenticate-api-key]
+                      :about home-page]}]
+     ["/users" {:post [^:interceptors [(annotate {:tags ["users"]})
+                                       authenticate-api-key]
+                       :users home-page]}]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]
      ["/*resource" {:get [(swagger/swagger-ui)]}]]]])
 

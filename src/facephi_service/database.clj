@@ -16,7 +16,8 @@
                       {:ex e
                        :cause (.getCause e)})))))
 
-(def db-spec
+(defn db-spec
+  []
   (assoc conf/database :datasource (lookup-datasource (:datasource conf/database))))
 
 (defqueries "facephi_service/sql/api_key.sql")

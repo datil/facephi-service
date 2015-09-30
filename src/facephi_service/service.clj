@@ -1,5 +1,6 @@
 (ns facephi-service.service
   (:require [facephi-service.api-key :as ak]
+            [facephi-service.conf :as conf]
             [facephi-service.database :as db]
             [facephi-service.messages :as msg]
             [io.pedestal.http :as bootstrap]
@@ -47,7 +48,7 @@
   (interceptor/before
    ::assoc-db-specs
    (fn [context]
-     (let [db db/db-spec]
+     (let [db (db/db-spec)]
        (assoc-in context [:request :db-spec] db)))))
 
 (swagger/defbefore authenticate-api-key

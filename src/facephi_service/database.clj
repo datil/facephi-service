@@ -21,6 +21,12 @@
   [config]
   (assoc config :datasource (lookup-datasource (:datasource config))))
 
+(defqueries "facephi_service/sql/api_key.sql")
+
+(defqueries "facephi_service/sql/user_account.sql")
+
+(defqueries "facephi_service/sql/user_log.sql")
+
 (defn get-user-tx
   [db-spec username]
   (jdbc/with-db-transaction [connection db-spec]
@@ -28,9 +34,3 @@
                [:face]
                (fn [v]
                  (b/to-byte-array (.getBinaryStream v))))))
-
-(defqueries "facephi_service/sql/api_key.sql")
-
-(defqueries "facephi_service/sql/user_account.sql")
-
-(defqueries "facephi_service/sql/user_log.sql")

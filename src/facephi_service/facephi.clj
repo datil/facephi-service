@@ -36,7 +36,8 @@
 
 (defn retrain
   [existing-face new-face]
-  (.retrainUser existing-face new-face))
+  (let [matcher (Matcher. (registration-matcher-configuration))]
+    (.retrainUser matcher existing-face new-face)))
 
 (defn authenticate
   [user-face provided-face]

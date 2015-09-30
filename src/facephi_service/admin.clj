@@ -6,7 +6,7 @@
 (defn create-new-api-key
   []
   (let [db-spec db/db-spec
-        api-key "76448c73c5754408b2d04aa3223c25ae"
+        api-key (ak/new-api-key)
         hashed-api-key (ak/hashed-api-key api-key)]
     (db/save-api-key! db-spec hashed-api-key 1)
     {:api-key api-key

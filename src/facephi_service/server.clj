@@ -1,7 +1,9 @@
 (ns facephi-service.server
   (:gen-class) ; for -main method in uberjar
   (:require [io.pedestal.http :as server]
-            [facephi-service.service :as service]))
+            [facephi-service.conf :as conf]
+            [facephi-service.service :as service]
+            [facephi-service.test-datasource :as ds]))
 
 ;; This is an adapted service map, that can be started and stopped
 ;; From the REPL you can call server/start and server/stop on this service
@@ -10,6 +12,7 @@
 (defn run-dev
   "The entry-point for 'lein run-dev'"
   [& args]
+  (ds/setup-test-datasource conf/datasource)
   (println "\nCreating your [DEV] server...")
   (-> service/service ;; start with production configuration
       (merge {:env :dev
@@ -50,4 +53,3 @@
 ;;  [_]
 ;;  (server/servlet-destroy @servlet)
 ;;  (reset! servlet nil))
-

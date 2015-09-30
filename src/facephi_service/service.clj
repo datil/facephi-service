@@ -48,7 +48,7 @@
   (interceptor/before
    ::assoc-db-specs
    (fn [context]
-     (let [db (db/db-spec)]
+     (let [db (db/db-spec conf/database)]
        (assoc-in context [:request :db-spec] db)))))
 
 (swagger/defbefore authenticate-api-key

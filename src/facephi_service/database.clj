@@ -1,6 +1,5 @@
 (ns facephi-service.database
-  (:require [facephi-service.conf :as conf]
-            [facephi-service.api-key :as api-key]
+  (:require [facephi-service.api-key :as api-key]
             [facephi-service.messages :as msg]
             [pandect.core :as pandect]
             [yesql.core :refer [defqueries]])
@@ -17,7 +16,7 @@
                        :cause (.getCause e)})))))
 
 (defn db-spec
-  []
-  (assoc conf/database :datasource (lookup-datasource (:datasource conf/database))))
+  [config]
+  (assoc config :datasource (lookup-datasource (:datasource config))))
 
 (defqueries "facephi_service/sql/api_key.sql")

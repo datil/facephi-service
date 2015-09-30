@@ -2,6 +2,7 @@
   (:require [facephi-service.api-key :as ak]
             [facephi-service.conf :as conf]
             [facephi-service.database :as db]
+            [facephi-service.facephi :as fp]
             [facephi-service.messages :as msg]
             [io.pedestal.http :as bootstrap]
             [io.pedestal.http.route :as route]
@@ -16,6 +17,39 @@
 (def opt s/optional-key)
 (def req s/required-key)
 
+;;;; Schemas
+
+(s/defschema NewUserRequest
+  {(req :username) s/Str
+   (req :template-1) s/Str
+   (opt :template-2) s/Str})
+
+(s/defschema NewUserResponse
+  {(req :username) s/Str})
+
+(s/defschema UserDetailResponse
+  {(req :username) s/Str
+   (req :created) s/Inst
+   (req :last_updated) s/Inst
+   (req :is_active) s/Num})
+
+(s/defschema AuthenticationRequest
+  {(req :template) s/Str})
+
+(s/defschema AuthenticationResponse
+  {(req :result) s/Bool
+   (req :username) s/Str
+   (opt :time) s/Str})
+
+(s/defschema RetrainingRequest
+  {(req :template) s/Str})
+
+(s/defschema RetrainingResponse
+  {(req :username) s/Str})
+
+(s/defschema ErrorResponse
+  {(req :message) s/Str})
+
 ;;;; Responses
 
 (defn not-authorized
@@ -23,6 +57,24 @@
   (-> (ring-resp/response {:message message})
       (ring-resp/status 401)))
 
+(defn bad-request
+  [message]
+  (-> (ring-resp/response {:message message})
+      (ring-resp/status 400)))
+
+(defn created
+  [message]
+  (-> (ring-resp/response message)
+      (ring-resp/status 201)))
+
+(defn ok
+  [message]
+  (ring-resp/response message))
+
+(defn not-found
+  [message]
+  (-> (ring-resp/response message)
+      (ring-resp/status 404)))
 
 ;;;; Handlers
 
@@ -36,11 +88,84 @@
                        :facephi_sdk_status "Ok"
                        :clojure_version (clojure-version)}))
 
-(swagger/defhandler new-user
-  {:summary "Creates new user account"
-   :responses {201 {:description "User created successfuly."}}}
+(swagger/defhandler user-registration
+  {:summary "Creates a new user"
+   :parameters {:body NewUserRequest}
+   :responses {201 {:description "User created successfuly."
+                    :schema NewUserResponse}
+               400 {:description "User already exists."}}}
   [request]
-  {:username "test-user"})
+  (let [db-spec (:db-spec request)
+        params (:body-params request)
+        username (:username params)
+        template-1 (:template-1 params)
+        template-2 (:template-2 params)
+        face (fp/new-user (fp/b64->byte_array template-1)
+                          (fp/b64->byte_array template-2))
+        existing-user (first (db/get-user db-spec username))]
+    (if existing-user
+      (bad-request (:duplicated-user msg/errors))
+      (do
+        (db/save-user! db-spec username 1 face)
+        (created {:username username})))))
+
+(swagger/defhandler user-detail
+  {:summary "Returns user details"
+   :parameters {:path {(req :username) s/Str}}
+   :responses {200 {:description "User found."
+                    :schema UserDetailResponse}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        username (:username (:path-params request))
+        user (first (db/get-user db-spec username))]
+    (if user
+      (ok (-> user
+              (dissoc :id)
+              (dissoc :face)))
+      (not-found {:message (:user-not-found msg/errors)}))))
+
+(swagger/defhandler authenticate
+  {:summary "Authenticates a user template against the user's face record."
+   :parameters {:path {(req :username) s/Str}
+                :body AuthenticationRequest}
+   :responses {200 {:description "User authentication completed."
+                    :schema AuthenticationResponse}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        params (:body-params request)
+        username (:username (:path-params request))
+        user (db/get-user-tx db-spec username)]
+    (if user
+      (ok {:result (fp/authenticate (:face user) (fp/b64->byte_array
+                                                  (:template params)))
+           :username username})
+      (not-found {:message (:user-not-found msg/errors)}))))
+
+(swagger/defhandler user-retraining
+  {:summary "Retrains a user face profile."
+   :parameters {:path {(req :username) s/Str}
+                :body RetrainingRequest}
+   :responses {200 {:description "User retrained successfuly."}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        params (:body-params request)
+        username (:username (:path-params request))
+        user (db/get-user-tx db-spec username)]
+    (if user
+      (do
+        (db/save-retrained-user! db-spec
+                                 (fp/retrain
+                                  (:face user)
+                                  (fp/b64->byte_array (:template params)))
+                                 username)
+        (ok {:username username}))
+      (not-found {:message (:user-not-found msg/errors)}))))
 
 ;;;; Interceptors
 
@@ -79,24 +204,21 @@
                   :description "Key service monitoring metrics."}
                  {:name "users"
                   :description "User account management."}]}}
-  [[["/"
-     ^:interceptors [bootstrap/json-body
-                     sw.error/handler
-                     (swagger/body-params)
-                     (swagger/coerce-request)
-                     (swagger/validate-response)
-                     assoc-db-spec]
+  [[["/" ^:interceptors [bootstrap/json-body
+                         sw.error/handler
+                         (swagger/body-params)
+                         (swagger/coerce-request)
+                         (swagger/validate-response)
+                         assoc-db-spec]
      ["/about" {:get [^:interceptors [(annotate {:tags ["monitoring"]})
                                       authenticate-api-key]
                       :about home-page]}]
      ["/users" ^:interceptors [(annotate {:tags ["users"]})
                                authenticate-api-key]
-      ["/registration" {:post [:user-registration home-page]}]
-      ["/:username" {:get [:user-detail home-page]}
-       ["/authentication" {:post [:user-authentication home-page]}]
-       ["/retraining" {:post [:user-retrain home-page]}]
-       ["/deactivation" {:post [:user-deactivation home-page]}]
-       ["/activation" {:post [:user-activation home-page]}]]]
+      ["/registration" {:post [:user-registration user-registration]}]
+      ["/:username" {:get [:user-detail user-detail]}
+       ["/authentication" {:post [:user-authentication authenticate]}]
+       ["/retraining" {:post [:user-retrain user-retraining]}]]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]
      ["/*resource" {:get [(swagger/swagger-ui)]}]]]])
 

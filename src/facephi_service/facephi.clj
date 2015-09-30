@@ -24,11 +24,15 @@
      MatchingSecurityLevel/HighSecurityLevel)))
 
 (defn new-user
-  [face-1 & face-2]
-  (let [user (.createUser (Matcher. (registration-matcher-configuration)) face-1)]
-    (if face-2
-      (.retrainUser user face-2)
-      user)))
+  ([face-1]
+   (let [matcher (Matcher. (registration-matcher-configuration))
+         user (.createUser matcher face-1)]
+     user))
+  ([face-1 face-2]
+   (let [matcher (Matcher. (registration-matcher-configuration))
+         user (.createUser matcher face-1)
+         retrained (.retrainUser matcher user face-2)]
+     retrained)))
 
 (defn retrain
   [existing-face new-face]
@@ -36,7 +40,5 @@
 
 (defn authenticate
   [user-face provided-face]
-  (.getIsPositiveMatch (.authenticate
-                        (Matcher. auth-matcher-configuration)
-                        user-face
-                        provided-face)))
+  (let [matcher (Matcher. (auth-matcher-configuration))]
+    (.getIsPositiveMatch (.authenticate matcher user-face provided-face))))

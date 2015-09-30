@@ -33,6 +33,11 @@
    (req :last_updated) s/Inst
    (req :is_active) s/Num})
 
+(s/defschema AuthenticationResponse
+  {(req :result) s/Bool
+   (req :username) s/Str
+   (opt :time) s/Str})
+
 (s/defschema ErrorResponse
   {(req :message) s/Str})
 
@@ -86,7 +91,8 @@
         username (:username params)
         template-1 (:template-1 params)
         template-2 (:template-2 params)
-        face (fp/new-user template-1 template-2)
+        face (fp/new-user (fp/b64->byte_array template-1)
+                          (fp/b64->byte_array template-2))
         existing-user (first (db/get-user db-spec username))]
     (if existing-user
       (bad-request (:duplicated-user msg/errors))
@@ -109,6 +115,25 @@
       (ok (-> user
               (dissoc :id)
               (dissoc :face)))
+      (not-found {:message (:user-not-found msg/errors)}))))
+
+(swagger/defhandler authenticate
+  {:summary "Authenticates a user template against the user's face record."
+   :parameters {:path {(req :username) s/Str}
+                :body {(req :template) s/Str}}
+   :responses {200 {:description "User authentication completed."
+                    :schema AuthenticationResponse}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        params (:body-params request)
+        username (:username (:path-params request))
+        user (db/get-user-tx db-spec username)]
+    (if user
+      (ok {:result (fp/authenticate (:face user) (fp/b64->byte_array
+                                                  (:template params)))
+           :username username})
       (not-found {:message (:user-not-found msg/errors)}))))
 
 ;;;; Interceptors
@@ -162,7 +187,7 @@
                                authenticate-api-key]
       ["/registration" {:post [:user-registration user-registration]}]
       ["/:username" {:get [:user-detail user-detail]}
-       ["/authentication" {:post [:user-authentication home-page]}]
+       ["/authentication" {:post [:user-authentication authenticate]}]
        ["/retraining" {:post [:user-retrain home-page]}]
        ["/deactivation" {:post [:user-deactivation home-page]}]
        ["/activation" {:post [:user-activation home-page]}]]]

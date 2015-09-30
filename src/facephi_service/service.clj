@@ -27,6 +27,15 @@
 (s/defschema NewUserResponse
   {(req :username) s/Str})
 
+(s/defschema UserDetailResponse
+  {(req :username) s/Str
+   (req :created) s/Inst
+   (req :last_updated) s/Inst
+   (req :is_active) s/Num})
+
+(s/defschema ErrorResponse
+  {(req :message) s/Str})
+
 ;;;; Responses
 
 (defn not-authorized
@@ -44,6 +53,14 @@
   (-> (ring-resp/response message)
       (ring-resp/status 201)))
 
+(defn ok
+  [message]
+  (ring-resp/response message))
+
+(defn not-found
+  [message]
+  (-> (ring-resp/response message)
+      (ring-resp/status 404)))
 
 ;;;; Handlers
 
@@ -76,6 +93,23 @@
       (do
         (db/save-user! db-spec username 1 face)
         (created {:username username})))))
+
+(swagger/defhandler user-detail
+  {:summary "Returns user details"
+   :parameters {:path {(req :username) s/Str}}
+   :responses {200 {:description "User found."
+                    :schema UserDetailResponse}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        username (:username (:path-params request))
+        user (first (db/get-user db-spec username))]
+    (if user
+      (ok (-> user
+              (dissoc :id)
+              (dissoc :face)))
+      (not-found {:message (:user-not-found msg/errors)}))))
 
 ;;;; Interceptors
 
@@ -127,7 +161,7 @@
      ["/users" ^:interceptors [(annotate {:tags ["users"]})
                                authenticate-api-key]
       ["/registration" {:post [:user-registration user-registration]}]
-      ["/:username" {:get [:user-detail home-page]}
+      ["/:username" {:get [:user-detail user-detail]}
        ["/authentication" {:post [:user-authentication home-page]}]
        ["/retraining" {:post [:user-retrain home-page]}]
        ["/deactivation" {:post [:user-deactivation home-page]}]

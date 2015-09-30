@@ -19,9 +19,13 @@
                  [org.slf4j/log4j-over-slf4j "1.7.7"]
 
                  ;; Service
+                 [byte-streams "0.2.0"]
                  [commons-discovery/commons-discovery "0.2"]
                  [com.oracle/ojdbc "12.10.10"]
+                 [org.clojure/data.codec "0.1.0"]
                  [environ "1.0.1"]
+                 [fphi-matcher-java/fphi-matcher-java "5.3.0"]
+                 [fphi-licensing-java/fphi-licensing-java "5.3.0"]
                  [frankiesardo/pedestal-swagger "0.4.4"
                   :exclusions [org.clojure/clojure
                                com.fasterxml.jackson.core/jackson-core
@@ -30,7 +34,9 @@
                                joda-time]]
                  [org.apache.tomcat/tomcat-catalina "8.0.26"]
                  [pandect "0.5.4"
-                  :exclusions [org.clojure/clojure]]
+                  :exclusions [org.clojure/clojure
+                               clj-tuple
+                               riddley]]
                  [prismatic/schema "1.0.1"]
                  [yesql "0.4.2"]]
   :pedantic? :abort
@@ -39,5 +45,6 @@
   :profiles {:dev {:aliases {"run-dev" ["trampoline" "run" "-m" "facephi-service.server/run-dev"]}
                    :dependencies [[io.pedestal/pedestal.service-tools "0.4.0"]]}
              :uberjar {:aot [facephi-service.server]}}
-
+  :repl-options {:host "0.0.0.0"
+                 :port 4001}
   :main ^{:skip-aot true} facephi-service.server)

@@ -39,7 +39,5 @@
   :profiles {:dev {:aliases {"run-dev" ["trampoline" "run" "-m" "facephi-service.server/run-dev"]}
                    :dependencies [[io.pedestal/pedestal.service-tools "0.4.0"]]}
              :uberjar {:aot [facephi-service.server]}}
-  :repl-options {:init (try
-                         (use 'facephi-service.test-datasource)
-                         (eval '(setup-test-datasource)))}
+
   :main ^{:skip-aot true} facephi-service.server)

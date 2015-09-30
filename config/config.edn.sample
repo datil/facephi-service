@@ -1,0 +1,8 @@
+{:database {:classname "oracle.jdbc.driver.OracleDriver"
+            :subprotocol "oracle"
+            :datasource "jdbc/datasourcename"}
+ :datasource {:name "jdbc/datasourcename"
+              :context "jdbc"
+              :url "jdbc:oracle:thin:@dbhost:1521/xe"
+              :user "sample_username"
+              :password "sample_password"}}

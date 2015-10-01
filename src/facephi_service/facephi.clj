@@ -25,9 +25,18 @@
 
 (defn new-user
   ([face-1]
-   (let [matcher (Matcher. (registration-matcher-configuration))
-         user (.createUser matcher face-1)]
-     user))
+   (try
+     (let [matcher (Matcher. (registration-matcher-configuration))
+           user (.createUser matcher face-1)]
+       user)
+     (catch MatcherException e
+       (throw (ex-info "FacePhi SDK: Error while generating new user."
+                       {}
+                       (.getCause e))))
+     (catch LicenseActivationException e
+       (throw (ex-info "FacePhi SDK: Licensing error."
+                       {}
+                       (.getCause e))))))
   ([face-1 face-2]
    (let [matcher (Matcher. (registration-matcher-configuration))
          user (.createUser matcher face-1)

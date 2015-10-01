@@ -7,12 +7,15 @@
             [io.pedestal.http :as bootstrap]
             [io.pedestal.http.route :as route]
             [io.pedestal.http.route.definition :refer [defroutes]]
+            [io.pedestal.interceptor.error :as error-int]
             [io.pedestal.interceptor.helpers :as interceptor]
             [pedestal.swagger.error :as sw.error]
             [pedestal.swagger.core :as swagger]
             [pedestal.swagger.doc :as sw.doc]
             [ring.util.response :as ring-resp]
-            [schema.core :as s]))
+            [schema.core :as s])
+  (:import [com.facephi.sdk.matcher MatcherException]
+           [com.facephi.sdk.licensing LicenseActivationException]))
 
 (def opt s/optional-key)
 (def req s/required-key)
@@ -169,6 +172,23 @@
 
 ;;;; Interceptors
 
+(def service-error-handler
+  (error-int/error-dispatch
+   [ctx ex]
+   [{:exception-type :com.facephi.sdk.matcher.MatcherException}]
+   (assoc ctx
+          :response
+          {:status 400 :body {:message (str (ex-data ex))}})
+   [{:exception-type :com.facephi.sdk.licensing.LicenseActivationException}]
+   (assoc ctx
+          :response
+          {:status 500 :body {:message (str (ex-data ex))}})
+   :else
+   ;;(assoc ctx :io.pedestal.impl.interceptor/error ex)
+   (assoc ctx
+          :response
+          {:status 500 :body {:message (ex-data ex)}})))
+
 (def assoc-db-spec
   (interceptor/before
    ::assoc-db-specs
@@ -205,6 +225,7 @@
                  {:name "users"
                   :description "User account management."}]}}
   [[["/" ^:interceptors [bootstrap/json-body
+                         service-error-handler
                          sw.error/handler
                          (swagger/body-params)
                          (swagger/coerce-request)

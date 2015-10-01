@@ -10,4 +10,10 @@
     <servlet-name>PedestalServlet</servlet-name>
   </servlet-descriptor>
 
+    <container-descriptor>
+    <prefer-application-packages>
+        <package-name>org.joda.time.*</package-name>
+    </prefer-application-packages>
+  </container-descriptor>
+
 </weblogic-web-app>

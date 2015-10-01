@@ -9,15 +9,15 @@ xsi:schemaLocation="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="
     <servlet-class>io.pedestal.servlet.ClojureVarServlet</servlet-class>
     <init-param>
       <param-name>init</param-name>
-      <param-value>bpapp-api.server/servlet-init</param-value>
+      <param-value>facephi-service.server/servlet-init</param-value>
     </init-param>
     <init-param>
       <param-name>service</param-name>
-      <param-value>bpapp-api.server/servlet-service</param-value>
+      <param-value>facephi-service.server/servlet-service</param-value>
     </init-param>
     <init-param>
       <param-name>destroy</param-name>
-      <param-value>bpapp-api.server/servlet-destroy</param-value>
+      <param-value>facephi-service.server/servlet-destroy</param-value>
     </init-param>
   </servlet>
 

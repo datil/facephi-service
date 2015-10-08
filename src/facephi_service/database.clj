@@ -27,7 +27,7 @@
 
 (defqueries "facephi_service/sql/user_log.sql")
 
-(defn get-user-tx
+(defn get-user-by-username-tx
   [db-spec username]
   (jdbc/with-db-transaction [connection db-spec]
     (update-in (first (get-user connection username))

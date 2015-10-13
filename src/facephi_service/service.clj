@@ -176,8 +176,7 @@
   [{:keys [db-spec body-params user] :as request}]
   (let [user (:user request)
         request-face (fp/b64->byte_array (:template body-params))
-        authenticated? (fp/authenticate (:face user) request-face)
-        _ (println authenticated?)]
+        authenticated? (fp/authenticate (:face user) request-face)]
     (if authenticated?
       (do (-> (db/save-retrained-user!
                db-spec (fp/auto-retrain (:face user) request-face) (:username user)))
@@ -210,17 +209,20 @@
    [{:exception-type :com.facephi.sdk.matcher.MatcherException}]
    (assoc ctx
           :response
-          {:status 400 :body {:message (str ex)}})
+          {:status 400 :body {:message (:data-processing msg/errors)}})
    [{:exception-type :com.facephi.sdk.licensing.LicenseActivationException}]
    (assoc ctx
           :response
-          {:status 500 :body {:message (str ex)}})
+          {:status 500 :body {:message (:licensing msg/errors)}})
+   [{:exception-type :java.lang.ArrayIndexOutOfBoundsException}]
+   (assoc ctx
+          :response
+          {:status 400 :body {:message (:data-processing msg/errors)}})
    :else
    ;;(assoc ctx :io.pedestal.impl.interceptor/error ex)
    (assoc ctx
           :response
-          {:status 500 :body {:message (str ex)
-                              :type "error"}})))
+          {:status 500 :body {:message (:unhandled msg/errors)}})))
 
 (def assoc-db-spec
   (interceptor/before
@@ -285,8 +287,8 @@
                                          user-retraining]}]
       ["/retraining/by-identification" {:post [^:interceptors
                                                [load-user-by-identification]
-                                         :identification-retraining
-                                         user-retraining]}]
+                                               :identification-retraining
+                                               user-retraining]}]
       ["/:username" {:get [:user-detail
                            user-detail]}]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]

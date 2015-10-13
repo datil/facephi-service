@@ -47,7 +47,7 @@
      user))
   ([face-1 face-2]
    (let [registration-matcher (Matcher. (registration-matcher-configuration))
-         retrain-matcher (Matcher. (auto-retrain-matcher-configuration))
+         retrain-matcher (Matcher. (manual-retrain-matcher-configuration))
          user (.createUser registration-matcher face-1)
          retrained (.retrainUser retrain-matcher user face-2)]
      retrained)))

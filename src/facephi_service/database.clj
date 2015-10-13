@@ -30,7 +30,17 @@
 (defn get-user-by-username-tx
   [db-spec username]
   (jdbc/with-db-transaction [connection db-spec]
-    (update-in (first (get-user connection username))
-               [:face]
-               (fn [v]
-                 (b/to-byte-array (.getBinaryStream v))))))
+    (when-let [user (first (get-user connection username))]
+      (update-in user
+                 [:face]
+                 (fn [v]
+                   (b/to-byte-array (.getBinaryStream v)))))))
+
+(defn get-user-by-identification-tx
+  [db-spec identification]
+  (jdbc/with-db-transaction [connection db-spec]
+    (when-let [user (first (get-user-by-identification connection identification))]
+      (update-in user
+                 [:face]
+                 (fn [v]
+                   (b/to-byte-array (.getBinaryStream v)))))))

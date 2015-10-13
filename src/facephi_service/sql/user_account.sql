@@ -3,10 +3,16 @@
 
 SELECT * FROM "USER_ACCOUNT" WHERE username = :username
 
+-- name: get-user-by-identification
+-- Finds an existing user by his identification
+
+SELECT * FROM "USER_ACCOUNT" WHERE identification = :identification
+
 -- name: save-user!
 -- Creates a new user account
 
-INSERT INTO "USER_ACCOUNT" (username, is_active, face) VALUES (:username, :is_active, :face)
+INSERT INTO "USER_ACCOUNT" (username, is_active, face, identification)
+VALUES (:username, :is_active, :face, :identification)
 
 -- name: save-retrained-user!
 -- Retrains an existing user updating its face

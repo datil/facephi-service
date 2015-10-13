@@ -43,7 +43,7 @@
 (defn servlet-init
   [_ config]
   ;; Initialize your app here.
-  (reset! servlet  (server/servlet-init service/service nil)))
+  (reset! servlet (server/servlet-init service/service nil)))
 
 (defn servlet-service
   [_ request response]

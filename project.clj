@@ -8,7 +8,7 @@
 
                  ;; Remove this line and uncomment one of the next lines to
                  ;; use Immutant or Tomcat instead of Jetty:
-                 ;; [io.pedestal/pedestal.jetty "0.4.0"]
+                 [io.pedestal/pedestal.jetty "0.4.0"]
                  ;; [io.pedestal/pedestal.immutant "0.4.0"]
                  ;; [io.pedestal/pedestal.tomcat "0.4.0"]
 
@@ -41,10 +41,12 @@
                  [yesql "0.4.2"]]
   :pedantic? :abort
   :min-lein-version "2.0.0"
+
   :resource-paths ["config", "resources"]
   :profiles {:dev {:aliases {"run-dev" ["trampoline" "run" "-m" "facephi-service.server/run-dev"]}
-                   :dependencies [[io.pedestal/pedestal.service-tools "0.4.0"]]}
+                   :dependencies [[io.pedestal/pedestal.service-tools "0.4.0"]
+                                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]]}
              :uberjar {:aot [facephi-service.server]}}
   :repl-options {:host "0.0.0.0"
                  :port 4001}
-  :main ^{:skip-aot true} facephi-service.server)
+  :main ^{:skip-aot false} facephi-service.server)

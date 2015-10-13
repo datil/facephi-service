@@ -1,29 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
-  <description>API App Movil Banco del Pacifico</description>
-  <display-name>API App Movil Banco del Pacifico</display-name>
 
-  <servlet>
-    <servlet-name>PedestalServlet</servlet-name>
-    <servlet-class>io.pedestal.servlet.ClojureVarServlet</servlet-class>
-    <init-param>
-      <param-name>init</param-name>
-      <param-value>facephi-service.server/servlet-init</param-value>
-    </init-param>
-    <init-param>
-      <param-name>service</param-name>
-      <param-value>facephi-service.server/servlet-service</param-value>
-    </init-param>
-    <init-param>
-      <param-name>destroy</param-name>
-      <param-value>facephi-service.server/servlet-destroy</param-value>
-    </init-param>
-  </servlet>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0"
+         metadata-complete="true">
+    <description>FacePhi Service</description>
+    <display-name>FacePhi Service</display-name>
 
-  <servlet-mapping>
-    <servlet-name>PedestalServlet</servlet-name>
-    <url-pattern>/*</url-pattern>
-  </servlet-mapping>
+    <servlet>
+        <servlet-name>PedestalServlet</servlet-name>
+        <servlet-class>io.pedestal.servlet.ClojureVarServlet</servlet-class>
+        <init-param>
+            <param-name>init</param-name>
+            <param-value>facephi-service.server/servlet-init</param-value>
+        </init-param>
+        <init-param>
+            <param-name>service</param-name>
+            <param-value>facephi-service.server/servlet-service</param-value>
+        </init-param>
+        <init-param>
+            <param-name>destroy</param-name>
+            <param-value>facephi-service.server/servlet-destroy</param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>PedestalServlet</servlet-name>
+        <url-pattern>/*</url-pattern>
+    </servlet-mapping>
 
 </web-app>

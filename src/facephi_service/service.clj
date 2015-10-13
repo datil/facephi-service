@@ -25,7 +25,8 @@
 (s/defschema NewUserRequest
   {(req :username) s/Str
    (req :template-1) s/Str
-   (opt :template-2) s/Str})
+   (opt :template-2) s/Str
+   (req :identification) s/Str})
 
 (s/defschema NewUserResponse
   {(req :username) s/Str})
@@ -34,18 +35,25 @@
   {(req :username) s/Str
    (req :created) s/Inst
    (req :last_updated) s/Inst
-   (req :is_active) s/Num})
+   (req :is_active) s/Num
+   (req :identification) s/Str})
 
-(s/defschema AuthenticationRequest
-  {(req :template) s/Str})
+(s/defschema IdentificationAuthenticationRequest
+  {(req :identification) s/Str
+   (req :template) s/Str})
 
-(s/defschema AuthenticationResponse
+(s/defschema UsernameAuthenticationRequest
+  {(req :username) s/Str
+   (req :template) s/Str})
+
+(s/defschema UsernameAuthenticationResponse
   {(req :result) s/Bool
    (req :username) s/Str
    (opt :time) s/Str})
 
-(s/defschema RetrainingRequest
-  {(req :template) s/Str})
+(s/defschema UsernameRetrainingRequest
+  {(req :username) s/Str
+   (req :template) s/Str})
 
 (s/defschema RetrainingResponse
   {(req :username) s/Str})
@@ -57,12 +65,12 @@
 
 (defn not-authorized
   [message]
-  (-> (ring-resp/response {:message message})
+  (-> (ring-resp/response message)
       (ring-resp/status 401)))
 
 (defn bad-request
   [message]
-  (-> (ring-resp/response {:message message})
+  (-> (ring-resp/response message)
       (ring-resp/status 400)))
 
 (defn created
@@ -105,11 +113,12 @@
         template-2 (:template-2 params)
         face (fp/new-user (fp/b64->byte_array template-1)
                           (fp/b64->byte_array template-2))
+        identification (:identification params)
         existing-user (first (db/get-user db-spec username))]
     (if existing-user
       (bad-request (:duplicated-user msg/errors))
       (do
-        (db/save-user! db-spec username 1 face)
+        (db/save-user! db-spec username 1 face identification)
         (created {:username username})))))
 
 (swagger/defhandler user-detail
@@ -129,46 +138,69 @@
               (dissoc :face)))
       (not-found {:message (:user-not-found msg/errors)}))))
 
-(swagger/defhandler authenticate
-  {:summary "Authenticates a user template against the user's face record."
-   :parameters {:path {(req :username) s/Str}
-                :body AuthenticationRequest}
-   :responses {200 {:description "User authentication completed."
-                    :schema AuthenticationResponse}
-               404 {:description "User not found."
+(swagger/defbefore load-user-by-username
+  {:summary "Ensures the username exists before proceeding to authenticate"
+   :parameters {:body UsernameAuthenticationRequest}
+   :responses {404 {:description "User not found."
                     :schema ErrorResponse}}}
-  [request]
-  (let [db-spec (:db-spec request)
-        params (:body-params request)
-        username (:username (:path-params request))
-        user (db/get-user-tx db-spec username)]
+  [context]
+  (let [db-spec (:db-spec (:request context))
+        params (:body-params (:request context))
+        user (db/get-user-by-username-tx db-spec (:username params))]
     (if user
-      (ok {:result (fp/authenticate (:face user) (fp/b64->byte_array
-                                                  (:template params)))
-           :username username})
-      (not-found {:message (:user-not-found msg/errors)}))))
+      (assoc-in context [:request :user] user)
+      (assoc-in context [:response] (not-found
+                                     {:message (:user-not-found msg/errors)})))))
+
+(swagger/defbefore load-user-by-identification
+  {:summary "Ensures the identity exists before proceeding to authenticate"
+   :parameters {:body IdentificationAuthenticationRequest}
+   :responses {404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [context]
+  (let [db-spec (:db-spec (:request context))
+        params (:body-params (:request context))
+        user (db/get-user-by-identification-tx db-spec (:identification params))]
+    (if user
+      (assoc-in context [:request :user] user)
+      (assoc-in context [:response] (not-found
+                                     {:message (:user-not-found msg/errors)})))))
+
+(swagger/defhandler authenticate
+  {:summary "Authenticates a username and face template against the user's face
+            record."
+   :responses {200 {:description "User authentication completed."
+                    :schema UsernameAuthenticationResponse}
+               401 {:description "User not authenticated"
+                    :schema ErrorResponse}}}
+  [{:keys [db-spec body-params user] :as request}]
+  (let [user (:user request)
+        request-face (fp/b64->byte_array (:template body-params))
+        authenticated? (fp/authenticate (:face user) request-face)
+        _ (println authenticated?)]
+    (if authenticated?
+      (do (-> (db/save-retrained-user!
+               db-spec (fp/auto-retrain (:face user) request-face) (:username user)))
+          (ok {:result authenticated?
+               :username (:username user)}))
+      (not-authorized {:message (:not-authenticated msg/errors)}))))
 
 (swagger/defhandler user-retraining
   {:summary "Retrains a user face profile."
-   :parameters {:path {(req :username) s/Str}
-                :body RetrainingRequest}
    :responses {200 {:description "User retrained successfuly."}
                404 {:description "User not found."
                     :schema ErrorResponse}}}
   [request]
   (let [db-spec (:db-spec request)
         params (:body-params request)
-        username (:username (:path-params request))
-        user (db/get-user-tx db-spec username)]
-    (if user
-      (do
-        (db/save-retrained-user! db-spec
-                                 (fp/retrain
-                                  (:face user)
-                                  (fp/b64->byte_array (:template params)))
-                                 username)
-        (ok {:username username}))
-      (not-found {:message (:user-not-found msg/errors)}))))
+        user (:user request)]
+    (do
+      (db/save-retrained-user! db-spec
+                               (fp/manual-retrain
+                                (:face user)
+                                (fp/b64->byte_array (:template params)))
+                               (:username user))
+      (ok {:username (:username user)}))))
 
 ;;;; Interceptors
 
@@ -178,16 +210,17 @@
    [{:exception-type :com.facephi.sdk.matcher.MatcherException}]
    (assoc ctx
           :response
-          {:status 400 :body {:message (str (ex-data ex))}})
+          {:status 400 :body {:message (str ex)}})
    [{:exception-type :com.facephi.sdk.licensing.LicenseActivationException}]
    (assoc ctx
           :response
-          {:status 500 :body {:message (str (ex-data ex))}})
+          {:status 500 :body {:message (str ex)}})
    :else
    ;;(assoc ctx :io.pedestal.impl.interceptor/error ex)
    (assoc ctx
           :response
-          {:status 500 :body {:message (ex-data ex)}})))
+          {:status 500 :body {:message (str ex)
+                              :type "error"}})))
 
 (def assoc-db-spec
   (interceptor/before
@@ -236,10 +269,26 @@
                       :about home-page]}]
      ["/users" ^:interceptors [(annotate {:tags ["users"]})
                                authenticate-api-key]
-      ["/registration" {:post [:user-registration user-registration]}]
-      ["/:username" {:get [:user-detail user-detail]}
-       ["/authentication" {:post [:user-authentication authenticate]}]
-       ["/retraining" {:post [:user-retrain user-retraining]}]]]
+      ["/registration" {:post [:user-registration
+                               user-registration]}]
+      ["/authentication/by-identification" {:post [^:interceptors
+                                                   [load-user-by-identification]
+                                                   :identification-authentication
+                                                   authenticate]}]
+      ["/authentication/by-username" {:post [^:interceptors
+                                             [load-user-by-username]
+                                             :username-authentication
+                                             authenticate]}]
+      ["/retraining/by-username" {:post [^:interceptors
+                                         [load-user-by-username]
+                                         :user-retraining
+                                         user-retraining]}]
+      ["/retraining/by-identification" {:post [^:interceptors
+                                               [load-user-by-identification]
+                                         :identification-retraining
+                                         user-retraining]}]
+      ["/:username" {:get [:user-detail
+                           user-detail]}]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]
      ["/*resource" {:get [(swagger/swagger-ui)]}]]]])
 
@@ -266,6 +315,6 @@
               ::bootstrap/resource-path "/public"
 
               ;; Either :jetty, :immutant or :tomcat (see comments in project.clj)
-              ::bootstrap/type :jetty
+              ;; ::bootstrap/type :jetty
               ;;::bootstrap/host "localhost"
               ::bootstrap/port 8080})

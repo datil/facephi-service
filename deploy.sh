@@ -1,5 +1,4 @@
 lein clean
-lein javac
 lein pom
 mvn dependency:copy-dependencies -DoutputDirectory=target/war/WEB-INF/lib
 mkdir -p target/war/WEB-INF/classes

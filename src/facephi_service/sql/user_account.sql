@@ -18,3 +18,8 @@ VALUES (:username, :is_active, :face, :identification, 0)
 -- Retrains an existing user updating its face
 
 UPDATE "USER_ACCOUNT" SET face = :retrained WHERE username = :username
+
+-- name: unlock-user!
+-- Unlocks an existing user
+
+UPDATE "USER_ACCOUNT" SET is_locked = 0 WHERE username = :username

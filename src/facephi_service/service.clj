@@ -36,6 +36,7 @@
    (req :created) s/Inst
    (req :last_updated) s/Inst
    (req :is_active) s/Num
+   (req :is_locked) s/Num
    (req :identification) s/Str})
 
 (s/defschema IdentificationAuthenticationRequest

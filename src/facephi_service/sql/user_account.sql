@@ -11,10 +11,15 @@ SELECT * FROM "USER_ACCOUNT" WHERE identification = :identification
 -- name: save-user!
 -- Creates a new user account
 
-INSERT INTO "USER_ACCOUNT" (username, is_active, face, identification)
-VALUES (:username, :is_active, :face, :identification)
+INSERT INTO "USER_ACCOUNT" (username, is_active, face, identification, is_locked)
+VALUES (:username, :is_active, :face, :identification, 0)
 
 -- name: save-retrained-user!
 -- Retrains an existing user updating its face
 
 UPDATE "USER_ACCOUNT" SET face = :retrained WHERE username = :username
+
+-- name: unlock-user!
+-- Unlocks an existing user
+
+UPDATE "USER_ACCOUNT" SET is_locked = 0 WHERE username = :username

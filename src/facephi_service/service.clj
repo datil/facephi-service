@@ -36,6 +36,7 @@
    (req :created) s/Inst
    (req :last_updated) s/Inst
    (req :is_active) s/Num
+   (req :is_locked) s/Num
    (req :identification) s/Str})
 
 (s/defschema IdentificationAuthenticationRequest
@@ -56,6 +57,12 @@
    (req :template) s/Str})
 
 (s/defschema RetrainingResponse
+  {(req :username) s/Str})
+
+(s/defschema UnlockingRequest
+  {(req :username) s/Str})
+
+(s/defschema UnlockingResponse
   {(req :username) s/Str})
 
 (s/defschema ErrorResponse
@@ -140,7 +147,6 @@
 
 (swagger/defbefore load-user-by-username
   {:summary "Ensures the username exists before proceeding to authenticate"
-   :parameters {:body UsernameAuthenticationRequest}
    :responses {404 {:description "User not found."
                     :schema ErrorResponse}}}
   [context]
@@ -154,7 +160,6 @@
 
 (swagger/defbefore load-user-by-identification
   {:summary "Ensures the identity exists before proceeding to authenticate"
-   :parameters {:body IdentificationAuthenticationRequest}
    :responses {404 {:description "User not found."
                     :schema ErrorResponse}}}
   [context]
@@ -186,7 +191,7 @@
 
 (swagger/defhandler user-retraining
   {:summary "Retrains a user face profile."
-   :responses {200 {:description "User retrained successfuly."}
+   :responses {200 {:description "User retrained successfully."}
                404 {:description "User not found."
                     :schema ErrorResponse}}}
   [request]
@@ -199,6 +204,20 @@
                                 (:face user)
                                 (fp/b64->byte_array (:template params)))
                                (:username user))
+      (ok {:username (:username user)}))))
+
+(swagger/defhandler user-unlocking
+  {:summary "Unlocks an user account."
+   :parameters {:body UnlockingRequest}
+   :responses {200 {:description "User unlocked successfully."
+                    :schema UnlockingResponse}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        user (:user request)]
+    (do
+      (db/unlock-user! db-spec (:username user))
       (ok {:username (:username user)}))))
 
 ;;;; Interceptors
@@ -289,6 +308,10 @@
                                                [load-user-by-identification]
                                                :identification-retraining
                                                user-retraining]}]
+      ["/unlock/by-username" {:post [^:interceptors
+                                     [load-user-by-username]
+                                     :user-unlocking
+                                     user-unlocking]}]
       ["/:username" {:get [:user-detail
                            user-detail]}]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]

@@ -263,6 +263,47 @@
       context
       (assoc context :response (not-authorized (:bad-api-key msg/errors))))))
 
+(def log-authentication
+  (interceptor/after
+   ::log-authentication
+   (fn [{:keys [request response] :as context}]
+     (case (:status response)
+       401 (do (db/save-user-log! (:db-spec request)
+                                  (:username (:user request))
+                                  (:identification (:user request))
+                                  "authentication"
+                                  "not_authenticated")
+               context)
+       200 (do (db/save-user-log! (:db-spec request)
+                                  (:username (:user request))
+                                  (:identification (:user request))
+                                  "authentication"
+                                  "authenticated")
+               context)
+       context))))
+
+(def log-unlocking
+  (interceptor/after
+   ::log-unlocking
+   (fn [{:keys [request response] :as context}]
+     (db/save-user-log! (:db-spec request)
+                        (:username (:user request))
+                        (:identification (:user request))
+                        "unlocking"
+                        "unlocked")
+     context)))
+
+(def log-retraining
+  (interceptor/after
+   ::log-retraining
+   (fn [{:keys [request response] :as context}]
+     (db/save-user-log! (:db-spec request)
+                        (:username (:user request))
+                        (:identification (:user request))
+                        "retraining"
+                        "retrained")
+     context)))
+
 ;;;; Routes
 
 (defn annotate
@@ -293,23 +334,28 @@
       ["/registration" {:post [:user-registration
                                user-registration]}]
       ["/authentication/by-identification" {:post [^:interceptors
-                                                   [load-user-by-identification]
+                                                   [load-user-by-identification
+                                                    log-authentication]
                                                    :identification-authentication
                                                    authenticate]}]
       ["/authentication/by-username" {:post [^:interceptors
-                                             [load-user-by-username]
+                                             [load-user-by-username
+                                              log-authentication]
                                              :username-authentication
                                              authenticate]}]
       ["/retraining/by-username" {:post [^:interceptors
-                                         [load-user-by-username]
+                                         [load-user-by-username
+                                          log-retraining]
                                          :user-retraining
                                          user-retraining]}]
       ["/retraining/by-identification" {:post [^:interceptors
-                                               [load-user-by-identification]
+                                               [load-user-by-identification
+                                                log-retraining]
                                                :identification-retraining
                                                user-retraining]}]
       ["/unlock/by-username" {:post [^:interceptors
-                                     [load-user-by-username]
+                                     [load-user-by-username
+                                      log-unlocking]
                                      :user-unlocking
                                      user-unlocking]}]
       ["/:username" {:get [:user-detail

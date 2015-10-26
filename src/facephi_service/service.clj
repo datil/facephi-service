@@ -282,6 +282,17 @@
                context)
        context))))
 
+(def log-unlocking
+  (interceptor/after
+   ::log-unlocking
+   (fn [{:keys [request response] :as context}]
+     (db/save-user-log! (:db-spec request)
+                        (:username (:user request))
+                        (:identification (:user request))
+                        "unlocking"
+                        "unlocked")
+     context)))
+
 ;;;; Routes
 
 (defn annotate
@@ -330,7 +341,8 @@
                                                :identification-retraining
                                                user-retraining]}]
       ["/unlock/by-username" {:post [^:interceptors
-                                     [load-user-by-username]
+                                     [load-user-by-username
+                                      log-unlocking]
                                      :user-unlocking
                                      user-unlocking]}]
       ["/:username" {:get [:user-detail

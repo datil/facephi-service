@@ -49,5 +49,6 @@
              :uberjar {:aot [facephi-service.server]}}
   :repl-options {:host "0.0.0.0"
                  :port 4001}
-  :autodoc { :name "facephi-service", :page-title "FacePhi Service API Reference"}
+  :codox {:project {:name "facephi-service" :version "0.1.0"}
+          :output-path "doc"}
   :main ^{:skip-aot false} facephi-service.server)

@@ -1,4 +1,6 @@
 (ns facephi-service.conf
+  "Service configuration. These variables refer to config.edn configuration file.
+  This file must be included in the /resources folder."
   (:require [clojure.edn :as edn]))
 
 (def database (:database

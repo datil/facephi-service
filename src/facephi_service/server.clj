@@ -1,4 +1,5 @@
 (ns facephi-service.server
+  "Pedestal server implementation."
   (:gen-class) ; for -main method in uberjar
   (:require [io.pedestal.http :as server]
             [facephi-service.conf :as conf]

@@ -1,4 +1,5 @@
 (ns facephi-service.service
+  "Pedestal service that implements API functions as HTTP resources."
   (:require [facephi-service.api-key :as ak]
             [facephi-service.conf :as conf]
             [facephi-service.database :as db]

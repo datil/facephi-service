@@ -1,4 +1,5 @@
-(ns facephi-service.messages)
+(ns facephi-service.messages
+  "Messages catalogue. These message strings are used across the service.")
 
 (def errors {:bad-api-key "El API key está incorrecto o no existe."
              :database-error "Error al conectar a la base de datos."

@@ -1,4 +1,5 @@
 (ns facephi-service.facephi
+  "Wraps the FacePhi Matcher SDK."
   (:require [byte-streams :as b]
             [clojure.data.codec.base64 :as b64])
   (:import [com.facephi.sdk.matcher
@@ -12,12 +13,14 @@
   (b64/decode (b/to-byte-array pattern)))
 
 (defn registration-matcher-configuration
+  "Sets the template security in registrations."
   []
   (doto (MatcherConfigurationManager.)
     (.setTemplateReliability TemplateReliability/ExtremeTemplateReliability)
     (.setMatcherType MatcherType/Any)))
 
 (defn authentication-matcher-configuration
+  "Sets the template reliability and security level in authentications."
   []
   (doto (MatcherConfigurationManager.)
     (.setTemplateReliability TemplateReliability/ExtremeTemplateReliability)
@@ -25,6 +28,8 @@
     (.setMatcherType MatcherType/Any)))
 
 (defn manual-retrain-matcher-configuration
+  "Retrains a template in a manual reatraining operations, such as after a
+  denied authentication attempt.."
   []
   (doto (MatcherConfigurationManager.)
     (.setTemplateReliability TemplateReliability/ExtremeTemplateReliability)
@@ -32,6 +37,8 @@
     (.setMatcherType MatcherType/Any)))
 
 (defn auto-retrain-matcher-configuration
+  "retrains a template in automatic retraining operations, such as after
+  a successful authentication."
   []
   (doto (MatcherConfigurationManager.)
     (.setTemplateReliability TemplateReliability/ExtremeTemplateReliability)

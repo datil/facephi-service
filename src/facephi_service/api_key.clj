@@ -1,5 +1,8 @@
 (ns facephi-service.api-key
-  "Public API for API key data."
+  "API for API keys.
+
+  API keys enable clients to access the service's endpoints. Right now, they can
+  just be created using the repl."
   (:require [pandect.core :as pandect]))
 
 (defn new-api-key

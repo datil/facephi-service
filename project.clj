@@ -1,5 +1,5 @@
 (defproject facephi-service "0.1.0"
-  :description "Biometric authentication service."
+  :description "Biometric authentication microservice."
   :url "https://github.com/datil/facephi-service"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -39,9 +39,9 @@
                                riddley]]
                  [prismatic/schema "1.0.1"]
                  [yesql "0.4.2"]]
-  :pedantic? :abort
+  :plugins [[lein-codox "0.9.0"]]
+  ;:pedantic? :abort
   :min-lein-version "2.0.0"
-
   :resource-paths ["config", "resources"]
   :profiles {:dev {:aliases {"run-dev" ["trampoline" "run" "-m" "facephi-service.server/run-dev"]}
                    :dependencies [[io.pedestal/pedestal.service-tools "0.4.0"]
@@ -49,4 +49,5 @@
              :uberjar {:aot [facephi-service.server]}}
   :repl-options {:host "0.0.0.0"
                  :port 4001}
+  :autodoc { :name "facephi-service", :page-title "FacePhi Service API Reference"}
   :main ^{:skip-aot false} facephi-service.server)

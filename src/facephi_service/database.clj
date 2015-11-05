@@ -1,4 +1,5 @@
 (ns facephi-service.database
+  "Database API"
   (:require [byte-streams :as b]
             [facephi-service.api-key :as api-key]
             [facephi-service.messages :as msg]
@@ -8,6 +9,7 @@
   (:import [org.apache.naming.java.javaURLContextFactory]))
 
 (defn- lookup-datasource
+  "Looks up a JNI datasource to connect to the database."
   [name]
   (try
     (-> (new javax.naming.InitialContext)
@@ -18,6 +20,8 @@
                        :cause (.getCause e)})))))
 
 (defn db-spec
+  "Generates a database specifification map that you can pass to
+   functions that query the database."
   [config]
   (assoc config :datasource (lookup-datasource (:datasource config))))
 
@@ -28,6 +32,7 @@
 (defqueries "facephi_service/sql/user_log.sql")
 
 (defn get-user-by-username-tx
+  "Wraps a database query so we can filter the template bytes[] accordingly."
   [db-spec username]
   (jdbc/with-db-transaction [connection db-spec]
     (when-let [user (first (get-user connection username))]
@@ -37,6 +42,7 @@
                    (b/to-byte-array (.getBinaryStream v)))))))
 
 (defn get-user-by-identification-tx
+  "Wraps a database query so we can filter the template bytes[] accordingly."
   [db-spec identification]
   (jdbc/with-db-transaction [connection db-spec]
     (when-let [user (first (get-user-by-identification connection identification))]

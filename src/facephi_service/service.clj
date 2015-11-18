@@ -123,11 +123,13 @@
                           (fp/b64->byte_array template-2))
         identification (:identification params)
         existing-user (first (db/get-user db-spec username))]
-    (if existing-user
-      (bad-request (:duplicated-user msg/errors))
-      (do
-        (db/save-user! db-spec username 1 face identification)
-        (created {:username username})))))
+    (if face
+      (if existing-user
+        (bad-request (:duplicated-user msg/errors))
+        (do
+          (db/save-user! db-spec username 1 face identification)
+          (created {:username username})))
+      (bad-request (:not-authenticated msg/errors)))))
 
 (swagger/defhandler user-detail
   {:summary "Returns user details"
@@ -227,22 +229,30 @@
   (error-int/error-dispatch
    [ctx ex]
    [{:exception-type :com.facephi.sdk.matcher.MatcherException}]
-   (assoc ctx
-          :response
-          {:status 400 :body {:message (:data-processing msg/errors)}})
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 400 :body {:message (:data-processing msg/errors)}}))
    [{:exception-type :com.facephi.sdk.licensing.LicenseActivationException}]
-   (assoc ctx
-          :response
-          {:status 500 :body {:message (:licensing msg/errors)}})
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 500 :body {:message (:licensing msg/errors)}}))
    [{:exception-type :java.lang.ArrayIndexOutOfBoundsException}]
-   (assoc ctx
-          :response
-          {:status 400 :body {:message (:data-processing msg/errors)}})
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 400 :body {:message (:data-processing msg/errors)}}))
    :else
    ;;(assoc ctx :io.pedestal.impl.interceptor/error ex)
-   (assoc ctx
-          :response
-          {:status 500 :body {:message (:unhandled msg/errors)}})))
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 500 :body {:message (:unhandled msg/errors)}}))))
 
 (def assoc-db-spec
   (interceptor/before

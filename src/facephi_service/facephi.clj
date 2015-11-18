@@ -54,11 +54,13 @@
          user (.createUser matcher face-1)]
      user))
   ([face-1 face-2]
-   (let [registration-matcher (Matcher. (registration-matcher-configuration))
-         retrain-matcher (Matcher. (manual-retrain-matcher-configuration))
-         user (.createUser registration-matcher face-1)
-         retrained (.retrainUser retrain-matcher user face-2)]
-     retrained)))
+   (let [matcher (Matcher. (registration-matcher-configuration))
+         user (.createUser matcher face-1)
+         is-same-user? (.getIsPositiveMatch
+                        (.authenticate matcher user face-2))]
+     (if is-same-user?
+       (.retrainUser matcher user face-2)
+       nil))))
 
 (defn manual-retrain
   "Manually retrains an user profile."

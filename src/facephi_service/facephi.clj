@@ -16,6 +16,7 @@
   "Sets the template security in registrations."
   []
   (doto (MatcherConfigurationManager.)
+    (.setMatchingSecurityLevel MatchingSecurityLevel/MediumSecurityLevel)
     (.setTemplateReliability TemplateReliability/ExtremeTemplateReliability)
     (.setMatcherType MatcherType/Any)))
 

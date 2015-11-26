@@ -199,15 +199,18 @@
                     :schema ErrorResponse}}}
   [request]
   (let [db-spec (:db-spec request)
-        params (:body-params request)
-        user (:user request)]
-    (do
-      (db/save-retrained-user! db-spec
-                               (fp/manual-retrain
-                                (:face user)
-                                (fp/b64->byte_array (:template params)))
-                               (:username user))
-      (ok {:username (:username user)}))))
+        user (:user request)
+        request-face (fp/b64->byte_array (:template (:body-params request)))
+        authenticated? (fp/retrain-authenticate (:face user) request-face)]
+    (if authenticated?
+      (do
+        (db/save-retrained-user! db-spec
+                                 (fp/manual-retrain
+                                  (:face user)
+                                  request-face)
+                                 (:username user))
+        (ok {:username (:username user)}))
+      (bad-request {:message (:not-authenticated msg/errors)}))))
 
 (swagger/defhandler user-unlocking
   {:summary "Unlocks an user account."
@@ -329,7 +332,8 @@
           :tags [{:name "monitoring"
                   :description "Key service monitoring metrics."}
                  {:name "users"
-                  :description "User account management."}]}}
+                  :description "User account management."}]}
+   :basePath "/facephi-service"}
   [[["/" ^:interceptors [bootstrap/json-body
                          service-error-handler
                          sw.error/handler

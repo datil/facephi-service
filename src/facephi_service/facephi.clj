@@ -80,3 +80,9 @@
   [user-face provided-face]
   (let [matcher (Matcher. (authentication-matcher-configuration))]
     (.getIsPositiveMatch (.authenticate matcher user-face provided-face))))
+
+(defn retrain-authenticate
+  "Returns true or false whether the faces was authenticated or not."
+  [user-face provided-face]
+  (let [matcher (Matcher. (registration-matcher-configuration))]
+    (.getIsPositiveMatch (.authenticate matcher user-face provided-face))))

@@ -16,6 +16,7 @@
   "Sets the template security in registrations."
   []
   (doto (MatcherConfigurationManager.)
+    (.setMatchingSecurityLevel MatchingSecurityLevel/MediumSecurityLevel)
     (.setTemplateReliability TemplateReliability/ExtremeTemplateReliability)
     (.setMatcherType MatcherType/Any)))
 
@@ -53,11 +54,13 @@
          user (.createUser matcher face-1)]
      user))
   ([face-1 face-2]
-   (let [registration-matcher (Matcher. (registration-matcher-configuration))
-         retrain-matcher (Matcher. (manual-retrain-matcher-configuration))
-         user (.createUser registration-matcher face-1)
-         retrained (.retrainUser retrain-matcher user face-2)]
-     retrained)))
+   (let [matcher (Matcher. (registration-matcher-configuration))
+         user (.createUser matcher face-1)
+         is-same-user? (.getIsPositiveMatch
+                        (.authenticate matcher user face-2))]
+     (if is-same-user?
+       (.retrainUser matcher user face-2)
+       nil))))
 
 (defn manual-retrain
   "Manually retrains an user profile."
@@ -76,4 +79,10 @@
   "Returns true or false whether the faces was authenticated or not."
   [user-face provided-face]
   (let [matcher (Matcher. (authentication-matcher-configuration))]
+    (.getIsPositiveMatch (.authenticate matcher user-face provided-face))))
+
+(defn retrain-authenticate
+  "Returns true or false whether the faces was authenticated or not."
+  [user-face provided-face]
+  (let [matcher (Matcher. (registration-matcher-configuration))]
     (.getIsPositiveMatch (.authenticate matcher user-face provided-face))))

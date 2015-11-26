@@ -123,11 +123,13 @@
                           (fp/b64->byte_array template-2))
         identification (:identification params)
         existing-user (first (db/get-user db-spec username))]
-    (if existing-user
-      (bad-request (:duplicated-user msg/errors))
-      (do
-        (db/save-user! db-spec username 1 face identification)
-        (created {:username username})))))
+    (if face
+      (if existing-user
+        (bad-request (:duplicated-user msg/errors))
+        (do
+          (db/save-user! db-spec username 1 face identification)
+          (created {:username username})))
+      (bad-request (:not-authenticated msg/errors)))))
 
 (swagger/defhandler user-detail
   {:summary "Returns user details"
@@ -197,15 +199,18 @@
                     :schema ErrorResponse}}}
   [request]
   (let [db-spec (:db-spec request)
-        params (:body-params request)
-        user (:user request)]
-    (do
-      (db/save-retrained-user! db-spec
-                               (fp/manual-retrain
-                                (:face user)
-                                (fp/b64->byte_array (:template params)))
-                               (:username user))
-      (ok {:username (:username user)}))))
+        user (:user request)
+        request-face (fp/b64->byte_array (:template (:body-params request)))
+        authenticated? (fp/retrain-authenticate (:face user) request-face)]
+    (if authenticated?
+      (do
+        (db/save-retrained-user! db-spec
+                                 (fp/manual-retrain
+                                  (:face user)
+                                  request-face)
+                                 (:username user))
+        (ok {:username (:username user)}))
+      (bad-request {:message (:not-authenticated msg/errors)}))))
 
 (swagger/defhandler user-unlocking
   {:summary "Unlocks an user account."
@@ -227,22 +232,30 @@
   (error-int/error-dispatch
    [ctx ex]
    [{:exception-type :com.facephi.sdk.matcher.MatcherException}]
-   (assoc ctx
-          :response
-          {:status 400 :body {:message (:data-processing msg/errors)}})
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 400 :body {:message (:data-processing msg/errors)}}))
    [{:exception-type :com.facephi.sdk.licensing.LicenseActivationException}]
-   (assoc ctx
-          :response
-          {:status 500 :body {:message (:licensing msg/errors)}})
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 500 :body {:message (:licensing msg/errors)}}))
    [{:exception-type :java.lang.ArrayIndexOutOfBoundsException}]
-   (assoc ctx
-          :response
-          {:status 400 :body {:message (:data-processing msg/errors)}})
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 400 :body {:message (:data-processing msg/errors)}}))
    :else
    ;;(assoc ctx :io.pedestal.impl.interceptor/error ex)
-   (assoc ctx
-          :response
-          {:status 500 :body {:message (:unhandled msg/errors)}})))
+   (do
+     (println (str ex))
+     (assoc ctx
+            :response
+            {:status 500 :body {:message (:unhandled msg/errors)}}))))
 
 (def assoc-db-spec
   (interceptor/before
@@ -319,7 +332,8 @@
           :tags [{:name "monitoring"
                   :description "Key service monitoring metrics."}
                  {:name "users"
-                  :description "User account management."}]}}
+                  :description "User account management."}]}
+   :basePath "/facephi-service"}
   [[["/" ^:interceptors [bootstrap/json-body
                          service-error-handler
                          sw.error/handler

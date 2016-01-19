@@ -23,3 +23,8 @@ UPDATE "USER_ACCOUNT" SET face = :retrained WHERE username = :username
 -- Unlocks an existing user
 
 UPDATE "USER_ACCOUNT" SET is_locked = 0 WHERE username = :username
+
+-- name: delete-user!
+-- Deletes user account
+
+DELETE FROM USER_ACCOUNT WHERE identification = :identification;

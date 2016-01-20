@@ -226,6 +226,16 @@
       (db/unlock-user! db-spec (:username user))
       (ok {:username (:username user)}))))
 
+(swagger/defhandler user-deletion
+  {:summary "Deletes an user account."
+   :parameters {:path {:identification s/Str}}}
+  [request]
+  (let [db-spec (:db-spec request)
+        user (:user request)]
+    (do
+      (db/delete-user! db-spec (:identification user))
+      (ok {}))))
+
 ;;;; Interceptors
 
 (def service-error-handler

@@ -148,6 +148,22 @@
               (dissoc :face)))
       (not-found {:message (:user-not-found msg/errors)}))))
 
+(swagger/defbefore load-user-from-path
+  {:summary "Ensures the identity exists before proceeding to authenticate"
+   :responses {404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [context]
+  (let [db-spec (:db-spec (:request context))
+        path (:path-params (:request context))
+        by-id (db/get-user-by-identification-tx db-spec (:username path))
+        by-username (db/get-user-by-username-tx db-spec (:username path))]
+    (if by-id
+      (assoc-in context [:request :user] by-id)
+      (if by-username
+        (assoc-in context [:request :user] by-username)
+        (assoc-in context [:response] (not-found
+                                         {:message (:user-not-found msg/errors)}))))))
+
 (swagger/defbefore load-user-by-username
   {:summary "Ensures the username exists before proceeding to authenticate"
    :responses {404 {:description "User not found."
@@ -228,7 +244,7 @@
 
 (swagger/defhandler user-deletion
   {:summary "Deletes an user account."
-   :parameters {:path {:identification s/Str}}}
+   :parameters {:path {:username s/Str}}}
   [request]
   (let [db-spec (:db-spec request)
         user (:user request)]
@@ -343,7 +359,8 @@
                   :description "Key service monitoring metrics."}
                  {:name "users"
                   :description "User account management."}]}
-   :basePath "/facephi-service"}
+                                        ;:basePath "/facephi-service"
+   }
   [[["/" ^:interceptors [bootstrap/json-body
                          service-error-handler
                          sw.error/handler
@@ -383,8 +400,9 @@
                                       log-unlocking]
                                      :user-unlocking
                                      user-unlocking]}]
-      ["/:username" {:get [:user-detail
-                           user-detail]}]]
+      ["/:username" ^:interceptors [load-user-from-path]
+       {:get [:user-detail user-detail]}
+       ["/deletion" {:post [:delete-user user-deletion]}]]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]
      ["/*resource" {:get [(swagger/swagger-ui)]}]]]])
 

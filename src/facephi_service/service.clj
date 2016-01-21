@@ -128,7 +128,8 @@
         (bad-request (:duplicated-user msg/errors))
         (do
           (db/save-user! db-spec username 1 face identification)
-          (created {:username username})))
+          (created {:username username
+                    :identification identification})))
       (bad-request (:not-authenticated msg/errors)))))
 
 (swagger/defhandler user-detail
@@ -322,6 +323,19 @@
                context)
        context))))
 
+(def log-registration
+  (interceptor/after
+   ::log-registration
+   (fn [{:keys [request response] :as context}]
+     (if (= (:status response) 201)
+       (do (db/save-user-log! (:db-spec request)
+                              (:username (:body response))
+                              (:identification (:body response))
+                              "registration"
+                              "registrated")
+           context)
+       context))))
+
 (def log-unlocking
   (interceptor/after
    ::log-unlocking
@@ -373,7 +387,8 @@
                       :about home-page]}]
      ["/users" ^:interceptors [(annotate {:tags ["users"]})
                                authenticate-api-key]
-      ["/registration" {:post [:user-registration
+      ["/registration" {:post [^:interceptors [log-registration]
+                               :user-registration
                                user-registration]}]
       ["/authentication/by-identification" {:post [^:interceptors
                                                    [load-user-by-identification

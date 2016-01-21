@@ -27,4 +27,4 @@ UPDATE "USER_ACCOUNT" SET is_locked = 0 WHERE username = :username
 -- name: delete-user!
 -- Deletes user account
 
-DELETE FROM USER_ACCOUNT WHERE identification = :identification;
+DELETE FROM USER_ACCOUNT WHERE identification = :identification

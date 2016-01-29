@@ -128,8 +128,7 @@
         (bad-request (:duplicated-user msg/errors))
         (do
           (db/save-user! db-spec username 1 face identification)
-          (created {:username username
-                    :identification identification})))
+          (created {:username username})))
       (bad-request (:not-authenticated msg/errors)))))
 
 (swagger/defhandler user-detail

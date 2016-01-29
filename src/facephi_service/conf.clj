@@ -10,3 +10,5 @@
 (def datasource (:datasource
                  (edn/read-string
                   (slurp (clojure.java.io/resource "config.edn")))))
+
+(def allowed-login-attempts 3)

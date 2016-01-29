@@ -4,7 +4,8 @@
   (:require [io.pedestal.http :as server]
             [facephi-service.conf :as conf]
             [facephi-service.service :as service]
-            [facephi-service.test-datasource :as ds]))
+            [facephi-service.test-datasource :as ds]
+            ))
 
 ;; This is an adapted service map, that can be started and stopped
 ;; From the REPL you can call server/start and server/stop on this service

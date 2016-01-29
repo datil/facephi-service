@@ -7,3 +7,8 @@ UPDATE USER_BLOCK SET "login_attempts" = "login_attempts" + 1 where "username" =
 -- Gets the login attempts of an user.
 
 SELECT "login_attempts" from USER_BLOCK where "username" = :username
+
+-- name: reset-attempts
+-- Resets login attempts for an user.
+
+UPDATE user_block SET "login_attempts" = 0 WHERE "username" IN (SELECT "username" FROM user_block WHERE "username" = :username)

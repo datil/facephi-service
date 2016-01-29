@@ -148,6 +148,20 @@
               (dissoc :face)))
       (not-found {:message (:user-not-found msg/errors)}))))
 
+(def block-user-by-login-attempts
+  (interceptor/before
+    :block-user-by-login-attempts
+    (fn [context]
+      (let [request (:request context)
+            db-spec (:db-spec request)
+            username (:username (:user request))
+            login-attempts (:login_attempts
+                            (first (db/get-attempts db-spec username)))]
+        (if (< login-attempts conf/allowed-login-attempts)
+          context
+          (assoc-in context [:response] (not-authorized
+                                         {:message (:user-blocked msg/errors)})))))))
+
 (swagger/defbefore load-user-from-path
   {:summary "Ensures the identity exists before proceeding to authenticate"
    :responses {404 {:description "User not found."
@@ -230,16 +244,17 @@
 
 (swagger/defhandler user-unlocking
   {:summary "Unlocks an user account."
-   :parameters {:body UnlockingRequest}
+   :parameters {:path {:username s/Str}}
    :responses {200 {:description "User unlocked successfully."
                     :schema UnlockingResponse}
                404 {:description "User not found."
                     :schema ErrorResponse}}}
   [request]
-  (let [db-spec (:db-spec request)
+  (let [;db-spec (:db-spec request)
+        db-spec (db/db-spec conf/database)
         user (:user request)]
     (do
-      (db/unlock-user! db-spec (:username user))
+      (db/reset-attempts-tx db-spec (:username user))
       (ok {:username (:username user)}))))
 
 (swagger/defhandler user-deletion
@@ -372,8 +387,7 @@
                   :description "Key service monitoring metrics."}
                  {:name "users"
                   :description "User account management."}]}
-                                        ;:basePath "/facephi-service"
-   }
+   :basePath "/facephi-service"}
   [[["/" ^:interceptors [bootstrap/json-body
                          service-error-handler
                          sw.error/handler
@@ -391,11 +405,13 @@
                                user-registration]}]
       ["/authentication/by-identification" {:post [^:interceptors
                                                    [load-user-by-identification
+                                                    block-user-by-login-attempts
                                                     log-authentication]
                                                    :identification-authentication
                                                    authenticate]}]
       ["/authentication/by-username" {:post [^:interceptors
                                              [load-user-by-username
+                                              block-user-by-login-attempts
                                               log-authentication]
                                              :username-authentication
                                              authenticate]}]
@@ -409,14 +425,13 @@
                                                 log-retraining]
                                                :identification-retraining
                                                user-retraining]}]
-      ["/unlock/by-username" {:post [^:interceptors
-                                     [load-user-by-username
-                                      log-unlocking]
-                                     :user-unlocking
-                                     user-unlocking]}]
       ["/:username" ^:interceptors [load-user-from-path]
        {:get [:user-detail user-detail]}
-       ["/deletion" {:post [:delete-user user-deletion]}]]]
+       ["/deletion" {:post [:delete-user user-deletion]}]
+       ["/unblock" {:post [^:interceptors [load-user-from-path
+                                           log-unlocking]
+                           :user-unlocking
+                           user-unlocking]}]]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]
      ["/*resource" {:get [(swagger/swagger-ui)]}]]]])
 

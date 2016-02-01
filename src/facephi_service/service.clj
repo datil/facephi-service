@@ -220,7 +220,8 @@
                db-spec (fp/auto-retrain (:face user) request-face) (:username user)))
           (ok {:result authenticated?
                :username (:username user)}))
-      (not-authorized {:message (:not-authenticated msg/errors)}))))
+      (do (db/increment-attempts! db-spec (:username user))
+          (not-authorized {:message (:not-authenticated msg/errors)})))))
 
 (swagger/defhandler user-retraining
   {:summary "Retrains a user face profile."

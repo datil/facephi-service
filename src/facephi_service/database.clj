@@ -31,6 +31,8 @@
 
 (defqueries "facephi_service/sql/user_log.sql")
 
+(defqueries "facephi_service/sql/user_block.sql")
+
 (defn get-user-by-username-tx
   "Wraps a database query so we can filter the template bytes[] accordingly."
   [db-spec username]

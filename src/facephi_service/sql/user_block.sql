@@ -1,4 +1,4 @@
--- name: increment-attempts
+-- name: increment-attempts!
 -- Increments login attempts counter by one.
 
 UPDATE USER_BLOCK SET "login_attempts" = "login_attempts" + 1 where "username" = :username
@@ -8,7 +8,7 @@ UPDATE USER_BLOCK SET "login_attempts" = "login_attempts" + 1 where "username" =
 
 SELECT "login_attempts" from USER_BLOCK where "username" = :username
 
--- name: reset-attempts
+-- name: reset-attempts!
 -- Resets login attempts for an user.
 
-UPDATE user_block SET "login_attempts" = 0 WHERE "username" IN (SELECT "username" FROM user_block WHERE "username" = :username)
+UPDATE user_block SET "login_attempts" = 0 WHERE "username" = :username

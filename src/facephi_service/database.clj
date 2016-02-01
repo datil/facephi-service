@@ -52,9 +52,3 @@
                  [:face]
                  (fn [v]
                    (b/to-byte-array (.getBinaryStream v)))))))
-
-(defn reset-attempts-tx
-  "Wraps reset attempts in a transaction to make it atomic."
-  [db-spec username]
-  (jdbc/with-db-transaction [connection db-spec]
-    (reset-attempts connection username)))

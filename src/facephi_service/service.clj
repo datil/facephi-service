@@ -254,7 +254,7 @@
         db-spec (db/db-spec conf/database)
         user (:user request)]
     (do
-      (db/reset-attempts-tx db-spec (:username user))
+      (db/reset-attempts! db-spec (:username user))
       (ok {:username (:username user)}))))
 
 (swagger/defhandler user-deletion

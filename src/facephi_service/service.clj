@@ -1,6 +1,7 @@
 (ns facephi-service.service
   "Pedestal service that implements API functions as HTTP resources."
   (:require [facephi-service.api-key :as ak]
+            [facephi-service.block :as block]
             [facephi-service.conf :as conf]
             [facephi-service.database :as db]
             [facephi-service.facephi :as fp]
@@ -157,10 +158,12 @@
             username (:username (:user request))
             login-attempts (:login_attempts
                             (first (db/get-attempts db-spec username)))]
-        (if (< login-attempts conf/allowed-login-attempts)
-          context
-          (assoc-in context [:response] (not-authorized
-                                         {:message (:user-blocked msg/errors)})))))))
+        (if login-attempts
+          (if (< login-attempts conf/allowed-login-attempts)
+            context
+            (assoc-in context [:response] (not-authorized
+                                           {:message (:user-blocked msg/errors)})))
+          context)))))
 
 (swagger/defbefore load-user-from-path
   {:summary "Ensures the identity exists before proceeding to authenticate"
@@ -220,7 +223,7 @@
                db-spec (fp/auto-retrain (:face user) request-face) (:username user)))
           (ok {:result authenticated?
                :username (:username user)}))
-      (do (db/increment-attempts! db-spec (:username user))
+      (do (block/register-login-attempt db-spec (:username user))
           (not-authorized {:message (:not-authenticated msg/errors)})))))
 
 (swagger/defhandler user-retraining

@@ -77,6 +77,11 @@
   (-> (ring-resp/response message)
       (ring-resp/status 401)))
 
+(defn blocked
+  [message]
+  (-> (ring-resp/response message)
+      (ring-resp/status 405)))
+
 (defn bad-request
   [message]
   (-> (ring-resp/response message)
@@ -120,8 +125,10 @@
         username (:username params)
         template-1 (:template-1 params)
         template-2 (:template-2 params)
-        face (fp/new-user (fp/b64->byte_array template-1)
-                          (fp/b64->byte_array template-2))
+        face (if template-2
+               (fp/new-user (fp/b64->byte_array template-1)
+                            (fp/b64->byte_array template-2))
+               (fp/new-user (fp/b64->byte_array template-1)))
         identification (:identification params)
         existing-user (first (db/get-user db-spec username))]
     (if face
@@ -161,7 +168,7 @@
         (if login-attempts
           (if (< login-attempts conf/allowed-login-attempts)
             context
-            (assoc-in context [:response] (not-authorized
+            (assoc-in context [:response] (blocked
                                            {:message (:user-blocked msg/errors)})))
           context)))))
 
@@ -348,7 +355,7 @@
      (if (= (:status response) 201)
        (do (db/save-user-log! (:db-spec request)
                               (:username (:body response))
-                              (:identification (:body response))
+                              (:identification (:body-params request))
                               "registration"
                               "registrated")
            context)

@@ -276,6 +276,7 @@
         user (:user request)]
     (do
       (db/delete-user! db-spec (:identification user))
+      (db/delete-block-registry! db-spec (:username user))
       (ok {}))))
 
 ;;;; Interceptors

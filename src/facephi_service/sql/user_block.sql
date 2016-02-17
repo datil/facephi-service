@@ -17,3 +17,8 @@ UPDATE user_block SET "login_attempts" = 0 WHERE "username" = :username
 -- Creates a new attempts registry for a user
 
 INSERT INTO "USER_BLOCK" ("login_attempts", "username") VALUES (0, :username)
+
+-- name: delete-block-registry!
+-- Deletes a block registry
+
+DELETE FROM USER_BLOCK WHERE "username" = :username

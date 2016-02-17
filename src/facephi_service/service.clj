@@ -38,7 +38,6 @@
    (req :created) s/Inst
    (req :last_updated) s/Inst
    (req :is_active) s/Num
-   (req :is_locked) s/Num
    (req :identification) s/Str})
 
 (s/defschema IdentificationAuthenticationRequest
@@ -153,7 +152,8 @@
     (if user
       (ok (-> user
               (dissoc :id)
-              (dissoc :face)))
+              (dissoc :face)
+              (dissoc :is_locked)))
       (not-found {:message (:user-not-found msg/errors)}))))
 
 (def block-user-by-login-attempts

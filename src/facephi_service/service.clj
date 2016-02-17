@@ -251,7 +251,7 @@
                                   request-face)
                                  (:username user))
         (ok {:username (:username user)}))
-      (bad-request {:message (:not-authenticated msg/errors)}))))
+      (not-authorized {:message (:not-authenticated msg/errors)}))))
 
 (swagger/defhandler user-unlocking
   {:summary "Unlocks an user account."

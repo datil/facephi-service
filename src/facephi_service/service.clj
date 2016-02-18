@@ -150,7 +150,7 @@
   (let [db-spec (:db-spec request)
         username (:username (:path-params request))
         user (first (db/get-user db-spec username))
-        attempts (db/get-attempts db-spec username)]
+        attempts (:login_attempts (first (db/get-attempts db-spec username)))]
     (if user
       (ok (-> user
               (dissoc :id)

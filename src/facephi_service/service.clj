@@ -38,6 +38,7 @@
    (req :created) s/Inst
    (req :last_updated) s/Inst
    (req :is_active) s/Num
+   (req :login_attempts) s/Num
    (req :identification) s/Str})
 
 (s/defschema IdentificationAuthenticationRequest
@@ -148,12 +149,14 @@
   [request]
   (let [db-spec (:db-spec request)
         username (:username (:path-params request))
-        user (first (db/get-user db-spec username))]
+        user (first (db/get-user db-spec username))
+        attempts (db/get-attempts db-spec username)]
     (if user
       (ok (-> user
               (dissoc :id)
               (dissoc :face)
-              (dissoc :is_locked)))
+              (dissoc :is_locked)
+              (assoc :login_attempts attempts)))
       (not-found {:message (:user-not-found msg/errors)}))))
 
 (def block-user-by-login-attempts

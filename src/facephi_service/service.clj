@@ -122,7 +122,7 @@
   [request]
   (let [db-spec (:db-spec request)
         params (:body-params request)
-        username (:username params)
+        username (clojure.string/lower-case (:username params))
         template-1 (:template-1 params)
         template-2 (:template-2 params)
         face (if template-2
@@ -185,9 +185,11 @@
         by-id (db/get-user-by-identification-tx db-spec (:username path))
         by-username (db/get-user-by-username-tx db-spec (:username path))]
     (if by-id
-      (assoc-in context [:request :user] by-id)
+      (assoc-in context [:request :user] (update-in by-id [:username]
+                                                    clojure.string/lower-case))
       (if by-username
-        (assoc-in context [:request :user] by-username)
+        (assoc-in context [:request :user] (update-in by-username [:username]
+                                                      clojure.string/lower-case))
         (assoc-in context [:response] (not-found
                                          {:message (:user-not-found msg/errors)}))))))
 
@@ -200,7 +202,8 @@
         params (:body-params (:request context))
         user (db/get-user-by-username-tx db-spec (:username params))]
     (if user
-      (assoc-in context [:request :user] user)
+      (assoc-in context [:request :user] (update-in user [:username]
+                                                    clojure.string/lower-case))
       (assoc-in context [:response] (not-found
                                      {:message (:user-not-found msg/errors)})))))
 
@@ -213,7 +216,8 @@
         params (:body-params (:request context))
         user (db/get-user-by-identification-tx db-spec (:identification params))]
     (if user
-      (assoc-in context [:request :user] user)
+      (assoc-in context [:request :user] (update-in user [:username]
+                                                    clojure.string/lower-case))
       (assoc-in context [:response] (not-found
                                      {:message (:user-not-found msg/errors)})))))
 

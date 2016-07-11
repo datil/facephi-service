@@ -200,7 +200,8 @@
   [context]
   (let [db-spec (:db-spec (:request context))
         params (:body-params (:request context))
-        user (db/get-user-by-username-tx db-spec (:username params))]
+        user (db/get-user-by-username-tx db-spec (clojure.string/lower-case
+                                                  (:username params)))]
     (if user
       (assoc-in context [:request :user] (update-in user [:username]
                                                     clojure.string/lower-case))

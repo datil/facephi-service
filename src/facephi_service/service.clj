@@ -182,8 +182,10 @@
   [context]
   (let [db-spec (:db-spec (:request context))
         path (:path-params (:request context))
-        by-id (db/get-user-by-identification-tx db-spec (:username path))
-        by-username (db/get-user-by-username-tx db-spec (:username path))]
+        by-id (db/get-user-by-identification-tx db-spec (clojure.string/lower-case
+                                                         (:username path)))
+        by-username (db/get-user-by-username-tx db-spec (clojure.string/lower-case
+                                                         (:username path)))]
     (if by-id
       (assoc-in context [:request :user] (update-in by-id [:username]
                                                     clojure.string/lower-case))

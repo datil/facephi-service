@@ -1,4 +1,4 @@
-(defproject facephi-service "0.3.2"
+(defproject facephi-service "0.3.3"
   :description "Biometric authentication microservice."
   :url "https://github.com/datil/facephi-service"
   :license {:name "Eclipse Public License"

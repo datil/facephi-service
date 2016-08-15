@@ -148,7 +148,7 @@
                     :schema ErrorResponse}}}
   [request]
   (let [db-spec (:db-spec request)
-        username (clojure.string/lower-case (:username (:path-params request)))
+        username (clojure.string/lower-case (:username (:user request)))
         user (first (db/get-user db-spec username))
         attempts (or (:login_attempts (first (db/get-attempts db-spec username))) 0)]
     (if user

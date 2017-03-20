@@ -3,6 +3,11 @@
 
 UPDATE USER_BLOCK SET "login_attempts" = "login_attempts" + 1 where "username" = :username
 
+-- name: lock-user!
+-- Increments login attempts to 3 and locks the user
+
+UPDATE USER_BLOCK SET "login_attempts" = "login_attempts" + 3 where "username" = :username
+
 -- name: get-attempts
 -- Gets the login attempts of an user.
 

@@ -1,4 +1,4 @@
-(defproject facephi-service "0.3.3"
+(defproject facephi-service "0.4.0"
   :description "Biometric authentication microservice."
   :url "https://github.com/datil/facephi-service"
   :license {:name "Eclipse Public License"
@@ -8,7 +8,7 @@
 
                  ;; Remove this line and uncomment one of the next lines to
                  ;; use Immutant or Tomcat instead of Jetty:
-                 [io.pedestal/pedestal.jetty "0.4.0"]
+                 ;; [io.pedestal/pedestal.jetty "0.4.0"]
                  ;; [io.pedestal/pedestal.immutant "0.4.0"]
                  ;; [io.pedestal/pedestal.tomcat "0.4.0"]
 

@@ -113,6 +113,13 @@
                        :facephi_sdk_status "Ok"
                        :clojure_version (clojure-version)}))
 
+(defn new-face
+  [template-1 template-2]
+  (if template-2
+    (fp/new-user (fp/b64->byte_array template-1)
+                 (fp/b64->byte_array template-2))
+    (fp/new-user (fp/b64->byte_array template-1))))
+
 (swagger/defhandler user-registration
   {:summary "Creates a new user"
    :parameters {:body NewUserRequest}
@@ -125,19 +132,16 @@
         username (clojure.string/lower-case (:username params))
         template-1 (:template-1 params)
         template-2 (:template-2 params)
-        face (if template-2
-               (fp/new-user (fp/b64->byte_array template-1)
-                            (fp/b64->byte_array template-2))
-               (fp/new-user (fp/b64->byte_array template-1)))
         identification (:identification params)
         existing-user (first (db/get-user db-spec username))]
-    (if face
-      (if existing-user
-        (bad-request (:duplicated-user msg/errors))
-        (do
-          (db/save-user! db-spec username 1 face identification)
-          (created {:username username})))
-      (bad-request (:not-authenticated msg/errors)))))
+    (if existing-user
+      (bad-request (:duplicated-user msg/errors))
+      (let [face (new-face template-1 template-2)]
+        (if face
+          (do
+            (db/save-user! db-spec username 1 face identification)
+            (created {:username username}))
+          (bad-request (:not-authenticated msg/errors)))))))
 
 (swagger/defhandler user-detail
   {:summary "Returns user details"
@@ -264,18 +268,31 @@
       (not-authorized {:message (:not-authenticated msg/errors)}))))
 
 (swagger/defhandler user-unlocking
-  {:summary "Unlocks an user account."
+  {:summary "Unlocks a user account."
    :parameters {:path {:username s/Str}}
    :responses {200 {:description "User unlocked successfully."
                     :schema UnlockingResponse}
                404 {:description "User not found."
                     :schema ErrorResponse}}}
   [request]
-  (let [;db-spec (:db-spec request)
-        db-spec (db/db-spec conf/database)
+  (let [db-spec (db/db-spec conf/database)
         user (:user request)]
     (do
       (db/reset-attempts! db-spec (:username user))
+      (ok {:username (:username user)}))))
+
+(swagger/defhandler user-locking
+  {:summary "Locks a user account."
+   :parameters {:path {:username s/Str}}
+   :responses {200 {:description "User locked successfully."
+                    :schema UnlockingResponse}
+               404 {:description "User not found."
+                    :schema ErrorResponse}}}
+  [request]
+  (let [db-spec (db/db-spec conf/database)
+        user (:user request)]
+    (do
+      (db/lock-user! db-spec (:username user))
       (ok {:username (:username user)}))))
 
 (swagger/defhandler user-deletion
@@ -383,6 +400,17 @@
                         "unlocked")
      context)))
 
+(def log-locking
+  (interceptor/after
+   ::log-locking
+   (fn [{:keys [request response] :as context}]
+     (db/save-user-log! (:db-spec request)
+                        (:username (:user request))
+                        (:identification (:user request))
+                        "locking"
+                        "locked")
+     context)))
+
 (def log-retraining
   (interceptor/after
    ::log-retraining
@@ -453,7 +481,11 @@
        ["/unblock" {:post [^:interceptors [load-user-from-path
                                            log-unlocking]
                            :user-unlocking
-                           user-unlocking]}]]]
+                           user-unlocking]}]
+       ["/block" {:post [^:interceptors [load-user-from-path
+                                         log-locking]
+                         :user-locking
+                         user-locking]}]]]
      ["/swagger.json" {:get [(swagger/swagger-json)]}]
      ["/*resource" {:get [(swagger/swagger-ui)]}]]]])
 

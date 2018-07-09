@@ -1,4 +1,4 @@
-(defproject facephi-service "0.4.0"
+(defproject facephi-service "0.5.0"
   :description "Biometric authentication microservice."
   :url "https://github.com/datil/facephi-service"
   :license {:name "Eclipse Public License"
@@ -24,8 +24,8 @@
                  [com.oracle/ojdbc "12.10.10"]
                  [org.clojure/data.codec "0.1.0"]
                  [environ "1.0.1"]
-                 [fphi-matcher-java/fphi-matcher-java "5.3.0"]
-                 [fphi-licensing-java/fphi-licensing-java "5.3.0"]
+                 [fphi-matcher-java/fphi-matcher-java "5.5.1"]
+                 [fphi-licensing-java/fphi-licensing-java "5.5.1"]
                  [frankiesardo/pedestal-swagger "0.4.4"
                   :exclusions [org.clojure/clojure
                                com.fasterxml.jackson.core/jackson-core
@@ -39,7 +39,8 @@
                                riddley]]
                  [prismatic/schema "1.0.1"]
                  [yesql "0.4.2"]]
-  :plugins [[lein-codox "0.9.0"]]
+  :plugins [[lein-codox "0.9.0"]
+            [lein-localrepo "0.5.4"]]
   ;:pedantic? :abort
   :min-lein-version "2.0.0"
   :resource-paths ["config", "resources"]

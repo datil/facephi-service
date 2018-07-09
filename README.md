@@ -1,35 +1,56 @@
 # facephi-service
 
-Provides biometric authentication as a service using FacePhi SDK.
+Servicio de autenticación facial usando FacePhi SDK.
 
-## Pre-requisites
+## Requerimientos
 
-To run this service you will need:
+Para ejecutar este servicio necesitas:
 
-- Running Oracle database.
-- Java 8.
-- Leiningen 2.x.
-- [FacePhi SDK](http://facephi.com/) (this is commercial software so you will need a license).
+- Base de datos Oracle
+- Java 8
+- Leiningen 2.x
+- [FacePhi SDK](http://facephi.com/)
 
-## Getting Started
+## Cómo empezar
 
-1. Start the application: `lein run-dev` \*
-2. Go to [localhost:8080](http://localhost:8080/) to see the service documentation.
+1. Inicia la aplicación: `lein run-dev` \*
+2. Visita [localhost:8080](http://localhost:8080/) para ver la documentación del servicio.
 
-\* `lein run-dev` automatically detects code changes. Alternatively, you can run in production mode
-with `lein run`.
+\* `lein run-dev` detecta cambios de código fuente. También lo puedes ejecutar en producción con `lein run`.
 
-## Configuration
+## Desplegar usando un WAR
 
-To configure logging see config/logback.xml. By default, the app logs to stdout and logs/.
-To learn more about configuring Logback, read its [documentation](http://logback.qos.ch/documentation.html).
+El proyecto incluye una rutina de generación de un WAR para WebLogic 12 o superior. Para ejecutarlo requieres:
 
-## Deploy as a WAR
+- [Leiningen 2.x](https://github.com/technomancy/leiningen)
+- [Git](https://git-scm.com/downloads)
+- [Maven](https://maven.apache.org/download.cgi)
 
-To deploy as a WAR execute the _deploy.sh_ script. You will need to install the following tools:
+Sigue estos pasos para generar el WAR:
 
-- Git
-- Maven
+1. Crea una carpeta llamada `libs` dentro de la carpeta del proyecto. En esta copia los siguientes JAR:
+
+- fphi-licensing-java-5.5.1.jar (Descárgalo del sitio web de FacePhi)
+- fphi-matcher-java-5.5.1.jar (Descárgalo del sitio web de FacePhi)
+- ojdbc7.jar (Descárgalo del [sitio web de Oracle](http://www.oracle.com/technetwork/database/features/jdbc/default-2280470.html))
+
+2. Instala los JAR en el repositorio Maven local de tu estación de trabajo:
+
+```shell
+$ lein localrepo install lib/fphi-licensing-java-5.5.1.jar fphi-licensing-java/fphi-matcher-java 5.5.1
+
+$ lein localrepo install lib/fphi-matcher-java-5.5.1.jar fphi-matcher-java/fphi-matcher-java 5.5.1
+
+$ lein localrepo install lib/ojdbc7.jar com.oracle/ojdbc "12.10.10"
+```
+
+3. Genera el JAR ejecutando la rutina _deploy.sh_:
+
+```shell
+$ ./deploy.sh
+```
+
+El JAR se generará en la carpeta `target`.
 
 ## Links
 
